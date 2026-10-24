@@ -23,3 +23,6 @@ sh tests/run_usb_desc.sh
 
 # S10 fail-closed descriptor integrity and mock no-TX gates (no physical device).
 sh tests/run_usb_desc_s10.sh
+
+# S13 fail-closed privacy and USB-path host regression, wholly mocked.
+sh tests/run_privacy_s12.sh
