@@ -5,7 +5,7 @@ SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM. TOKEN_VAZIO != 0.
 ## Ownership
 - src/ + include/: producer-authoritative portable freestanding parser/state machine. No USB I/O, libc, heap, syscalls, JNI, external dependencies, mutable globals or firmware-write commands.
 - host/linux_usbfs.c: Linux notebook OS-dependent host connector, requiring kernel usbfs and USB device permissions. It is **not** freestanding.
-- Android UsbManager bridge: TOKEN_VAZIO_ANDROID_USB_HOST_IMPLEMENTATION until JNI/NDK app integration and physical Android OTG tests. Requires USB permission grant and hardware support.
+- host/android/AndroidFastbootUsbTransport.java: Android USB Host adapter source verifies permission, selects Fastboot interface and bulk endpoints, and allows bounded getvar only. Java syntax compiled against synthetic Android SDK stubs locally; real Android SDK, JNI/NDK wiring, and physical OTG remain unverified.
 - Notebook as USB target for Android host: TOKEN_VAZIO_NOTEBOOK_USB_GADGET absent a notebook supporting USB device/gadget mode. Do not confuse with notebook host → phone target.
 - Mi Assistant / Mi Recovery: TOKEN_VAZIO_OEM_PROTOCOL; separate from Fastboot, never infer from mere USB connectivity.
 
@@ -27,7 +27,7 @@ Example **placeholder** (interface and endpoints must be replaced with actual ob
 Linux host adapter does not enumerate descriptors by itself; the user must verify USB interface, endpoints, permissions, and device path independently. No root-free guarantee.
 
 ## Android phone → phone
-OS UsbManager permission → Fastboot interface discovery and two bulk endpoints → Android host adapter → native JNI/NDK bridge → **same L0**. The Android OS bridge and APK are not implemented here; Android device testing not observed.
+OS UsbManager permission → Fastboot interface discovery and two bulk endpoints → Android host adapter → native JNI/NDK bridge → **same L0**. Android OS transport source exists but JNI bridge, APK and device tests are not implemented/observed.
 
 ## Gates
 G0 freestanding object: -ffreestanding -fno-builtin -nostdlib; nm -u must be empty.
