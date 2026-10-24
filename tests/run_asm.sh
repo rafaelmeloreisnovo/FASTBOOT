@@ -32,3 +32,6 @@ fi
 echo "PASS ISA boundaries; no undefined externals or relocations"
 wc -c build/fb_asm_armv7.bin build/fb_asm_aarch64.bin
 sha256sum build/fb_asm_armv7.bin build/fb_asm_aarch64.bin
+
+# S5 additive gate: preserve the predecessor getvar tests.
+sh tests/run_classify_asm.sh
