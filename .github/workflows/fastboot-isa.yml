@@ -81,3 +81,35 @@ jobs:
           echo 'PASS_SCOPED=HOST_SYNTHETIC_AND_CROSS_ASSEMBLY'
           echo 'NOT_RUN=PHYSICAL_USB,PHYSICAL_ARM32,PHYSICAL_ARM64'
           echo 'claim_allowed=false'
+
+  arm64-native-l0:
+    # Native Arm-hosted GitHub Actions runner; not a local Android or USB device.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - name: Checkout pinned source without retained credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Execute AArch64 ISA differential tests at exact SHA
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test "$(uname -m)" = "aarch64"
+          printf 'uname=%s SHA=%s\n' "$(uname -m)" "$EXACT_HEAD"
+          printf '\n' | cc -dM -E -x c - | grep -q '^#define __aarch64__ 1$'
+          EXPECTED_HEAD="$EXACT_HEAD" CC=cc sh tests/run_native_arm.sh
+          # Additional independent native ARM64 check on the freestanding USB descriptor parser.
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wshadow -Wconversion \
+            -Iinclude src/fb_usb_desc.c tests/test_usb_desc_s10.c \
+            -o build/test_usb_desc_s10_arm64_native
+          ./build/test_usb_desc_s10_arm64_native
+          readelf -h build/test_usb_desc_s10_arm64_native | grep -q 'Machine:.*AArch64'
+          sha256sum build/test_usb_desc_s10_arm64_native
+          echo 'PASS_SCOPED=NATIVE_ARM64_USERLAND; NOT_RUN=ANDROID_PHONE,USB_OTG,BAREMETAL_SOC'
+          echo 'claim_allowed=false; promotion=false'
