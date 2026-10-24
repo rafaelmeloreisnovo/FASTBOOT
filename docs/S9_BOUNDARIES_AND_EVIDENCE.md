@@ -59,3 +59,16 @@ Human review + independent exact-head build evidence required before
 promoting. SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM.
 TOKEN_VAZIO != 0; claim_allowed=false; promotion=false.
 Rollback is the exact main merge commit, predecessor branch preserved.
+
+
+## S9.1 compiler metadata isolation
+
+Clang ARMv7 emitted original .ARM.exidx unwind metadata with one
+R_ARM_PREL31 relocation referring to the .text section. The original
+ELF object is **retained**. The gate generates a separate derived ELF
+with only the unwind metadata sections removed, verifies there are no
+remaining relocations, then extracts .text into a plain instruction
+binary. No external symbols were present in either object. AArch64
+already had no relocations. No claim of zero relocations in the raw
+ARMv7 compiler output is permitted. The stripped derivative is not a
+full bootable firmware image and does not prove hardware execution.
