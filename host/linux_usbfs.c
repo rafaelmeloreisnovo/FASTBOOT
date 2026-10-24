@@ -73,6 +73,25 @@ static int usb_verify_fastboot_iface(int fd, unsigned int iface,
   }
   return 0;
 }
+/* Revalidate the claimed interface's CURRENT alternate setting before TX.
+ * USB GET_INTERFACE: standard IN request to an interface. This is L1 only.
+ * Treat unsupported/stalled requests as unsafe instead of assuming alt=0.
+ */
+static int usb_get_interface_alt_zero(int fd, unsigned int iface) {
+  struct usbdevfs_ctrltransfer c;
+  unsigned char alt=255u;
+  int n;
+  memset(&c,0,sizeof(c));
+  c.bRequestType=0x81u; /* USB_DIR_IN | STANDARD | RECIP_INTERFACE */
+  c.bRequest=10u;       /* GET_INTERFACE */
+  c.wValue=0u;
+  c.wIndex=(unsigned short)iface;
+  c.wLength=1u;
+  c.timeout=2500u;
+  c.data=&alt;
+  n=ioctl(fd,USBDEVFS_CONTROL,&c);
+  return n==1 && alt==0u;
+}
 int main(int argc, char **argv) {
   unsigned long iface,epout,epin;int fd=-1, claimed=0,rc=1;
   uint8_t tx[FB_COMMAND_MAX],rx[FB_REPLY_MAX]; size_t txlen;
@@ -90,8 +109,20 @@ int main(int argc, char **argv) {
   if(!usb_verify_fastboot_iface(fd,(unsigned)iface,(unsigned)epout,(unsigned)epin)) {
     fputs("FAIL CLOSED: USB active config is not exactly a matching FF/42/03 two-BULK Fastboot interface\n",stderr);goto done;
   }
-  {int num=(int)iface;if(ioctl(fd,USBDEVFS_CLAIMINTERFACE,&num)<0){perror("claim interface");goto done;}claimed=1;}
+  /* Initialize before claim: fail-closed paths after claim must not close an
+   * uninitialized guard. A claimed interface always gets released at done.
+   */
   fb_guard_init(&g,FB_GUARD_BUDGET_MS);
+  {int num=(int)iface;if(ioctl(fd,USBDEVFS_CLAIMINTERFACE,&num)<0){perror("claim interface");goto done;}claimed=1;}
+  /* Do not trust descriptor selection made before claim: recheck active
+   * configuration and currently selected alternate setting before bulk OUT.
+   * This mitigates (but cannot eliminate) host/device state races.
+   */
+  if(!usb_verify_fastboot_iface(fd,(unsigned)iface,(unsigned)epout,(unsigned)epin) ||
+     !usb_get_interface_alt_zero(fd,(unsigned)iface)) {
+    fputs("FAIL CLOSED: claimed USB Fastboot interface changed or alt setting is not zero\n",stderr);
+    goto done;
+  }
   fb_guard_step(&g,FB_EV_BIND,0,0,0u);
   if(g.stage!=FB_G_TX)goto done;
   memset(&x,0,sizeof(x));x.ep=(unsigned)epout;x.len=(unsigned)txlen;

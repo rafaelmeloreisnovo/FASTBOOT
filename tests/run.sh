@@ -20,3 +20,6 @@ echo "PASS: L0 no undefined symbols; forbidden write profile rejected; Linux hos
 
 # S9 bounded pure-C USB descriptor scanner tests, no device connected.
 sh tests/run_usb_desc.sh
+
+# S10 fail-closed descriptor integrity and mock no-TX gates (no physical device).
+sh tests/run_usb_desc_s10.sh
