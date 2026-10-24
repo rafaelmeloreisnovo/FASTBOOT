@@ -1,0 +1,61 @@
+name: FASTBOOT Omega ISA and freestanding source gates
+on:
+  pull_request:
+    paths:
+      - 'asm/**'
+      - 'src/**'
+      - 'include/**'
+      - 'host/**'
+      - 'tests/**'
+      - '.github/workflows/fastboot-isa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-isa-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # GitHub-hosted checkout is build infrastructure only, not an ELF dependency.
+      - name: Checkout exact source HEAD, no persisted token
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Exact SHA identity gate
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          printf 'HEAD=%s\n' "$EXACT_HEAD"
+      - name: No downloaded toolchains; prerequisites must already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          for t in cc clang llvm-objcopy llvm-objdump nm readelf sha256sum; do
+            command -v "$t"
+          done
+      - name: C11 freestanding no-extern gate and transport compile-only
+        shell: bash
+        run: sh tests/run.sh
+      - name: Bytewise ISA predecessor chain S4, S5 and S6
+        shell: bash
+        run: sh tests/run_asm.sh
+      - name: Host sanitizer on bounded ISA state machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          clang -std=c11 -O1 -g -fsanitize=address,undefined \
+            -fno-omit-frame-pointer -Wall -Wextra -Werror -Wshadow -Wconversion \
+            -Iinclude src/fb_omega.c tests/test_asm_session.c \
+            asm/x86_64/fb_session.S -o build/test_asm_session_sanitized
+          ASAN_OPTIONS=detect_leaks=1 ./build/test_asm_session_sanitized
+      - name: Preserve provenance without declaring hardware PASS
+        shell: bash
+        run: |
+          echo 'PASS_SCOPED=HOST_SYNTHETIC_AND_CROSS_ASSEMBLY'
+          echo 'NOT_RUN=PHYSICAL_USB,PHYSICAL_ARM32,PHYSICAL_ARM64'
+          echo 'claim_allowed=false'
