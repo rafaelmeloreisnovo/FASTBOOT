@@ -1,0 +1,145 @@
+{
+  "schema": "fastboot-omega/s14-evidence-gates/v1",
+  "generated_date": "2026-10-24",
+  "scope": "Research links and governance observations; not physical execution",
+  "predecessor": {
+    "main_at_checkout": "c046bb1ba29fbf4445b7df82b3a59dff907b5494",
+    "pr": 4,
+    "pr_head": "d3abeaeb930bc827d70fcdbab04d62a2f921a036",
+    "pr_merged_at_provider": "2026-10-24T20:29:38Z",
+    "ci_prior_head_run": 40129145151
+  },
+  "claims": {
+    "academic_novelty": false,
+    "independent_review_verified": false,
+    "physical_usb_verified": false,
+    "product_approved": false
+  },
+  "alphaXiv_folder_id": "01a16fa1-2f8a-7ee8-9914-1173074da6d1",
+  "papers": [
+    {
+      "id": "2505.21642",
+      "title": "Reproducible Builds and Insights from an Independent Verifier for Arch Linux",
+      "url": "https://www.alphaxiv.org/abs/2505.21642",
+      "finding": "Independent rebuilds can identify source-to-binary discrepancies, but identical binaries do not establish a trustworthy compiler.",
+      "gate": "G14-02"
+    },
+    {
+      "id": "2409.12850",
+      "title": "USBIPS Framework: Protecting Hosts from Malicious USB Peripherals",
+      "url": "https://www.alphaxiv.org/abs/2409.12850",
+      "finding": "Cross-layer malicious-peripheral attacks exceed simple interface/path allowlists; evaluated solution targets Windows, not this Linux Fastboot host.",
+      "gate": "G14-03"
+    },
+    {
+      "id": "2605.08363",
+      "title": "Kettle: Attested Builds for Verifiable Software Provenance",
+      "url": "https://www.alphaxiv.org/abs/2605.08363",
+      "finding": "TEE-backed attestation binds source/toolchain/environment to artifact digests; it does not prove code safety or compiler semantic correctness.",
+      "gate": "G14-04"
+    },
+    {
+      "id": "2606.04990",
+      "title": "From Agent Traces to Trust: A Survey of Evidence Tracing and Execution Provenance in LLM Agents",
+      "url": "https://www.alphaxiv.org/abs/2606.04990",
+      "finding": "Typed execution provenance and evidence traces can show which observation supports which claim; final output alone is insufficient.",
+      "gate": "G14-05"
+    }
+  ],
+  "gates": [
+    {
+      "id": "G14-01",
+      "token_type": "MERGE_REVIEW_NOT_OBSERVED",
+      "status": "OBSERVED_GAP",
+      "priority": "P0",
+      "evidence": [
+        "https://github.com/rafaelmeloreisnovo/FASTBOOT/pull/4"
+      ],
+      "acceptance": "Independent reviewer approval and enforced required checks for a subsequent candidate, with a provider-observed rejected unapproved merge.",
+      "rollback": "No automated revert or delete; preserve the merged SHA and raise explicit governance correction."
+    },
+    {
+      "id": "G14-02",
+      "token_type": "INDEPENDENT_REBUILD_NOT_RUN",
+      "status": "NOT_RUN",
+      "priority": "P1",
+      "evidence": [
+        "https://www.alphaxiv.org/abs/2505.21642"
+      ],
+      "acceptance": "Two independently provisioned builders produce byte-identical outputs for the same source HEAD and disclosed toolchains; report differing trust roots.",
+      "rollback": "Do not distribute unverified binary; retain all build receipts."
+    },
+    {
+      "id": "G14-03",
+      "token_type": "PHYSICAL_USB_IDENTITY_UNVERIFIED",
+      "status": "UNVERIFIED",
+      "priority": "P0",
+      "evidence": [
+        "https://www.alphaxiv.org/abs/2409.12850"
+      ],
+      "acceptance": "With explicit consent on sacrificial hardware, verify device descriptor stability and fail-closed behavior under reconnect/race tests; no flash/unlock/erase.",
+      "rollback": "Disconnect transport safely and retain host-only mode."
+    },
+    {
+      "id": "G14-04",
+      "token_type": "ATTESTATION_NOT_RUN",
+      "status": "NOT_RUN",
+      "priority": "P1",
+      "evidence": [
+        "https://www.alphaxiv.org/abs/2605.08363"
+      ],
+      "acceptance": "Independently verify build provenance bound to source, toolchain and artifact hashes or label as unauthenticated CI log.",
+      "rollback": "Preserve provenance statements as untrusted and stop promotion."
+    },
+    {
+      "id": "G14-05",
+      "token_type": "CLAIM_TRACE_PARTIAL",
+      "status": "UNVERIFIED",
+      "priority": "P1",
+      "evidence": [
+        "https://www.alphaxiv.org/abs/2606.04990"
+      ],
+      "acceptance": "Every release claim has an exact SHA, execution environment, observable log and explicit scope; missing evidence stays a typed nonzero gap.",
+      "rollback": "Demote claim to hypothesis, without deleting historical records."
+    },
+    {
+      "id": "G14-06",
+      "token_type": "MERGE_SHA_CI_NOT_OBSERVED",
+      "status": "NOT_RUN",
+      "priority": "P0",
+      "evidence": [
+        "https://github.com/rafaelmeloreisnovo/FASTBOOT/commit/c046bb1ba29fbf4445b7df82b3a59dff907b5494",
+        "https://github.com/rafaelmeloreisnovo/FASTBOOT/actions/runs/40129145151"
+      ],
+      "acceptance": "A CI record on exact merge SHA or independent binary equivalence receipt; do not inherit parent-head PASS blindly.",
+      "rollback": "No production release on unverified merge artifact."
+    },
+    {
+      "id": "G14-07",
+      "token_type": "RESEARCH_NOVELTY_UNVERIFIED",
+      "status": "UNVERIFIED",
+      "priority": "P1",
+      "evidence": [
+        "https://www.alphaxiv.org/abs/2505.21642",
+        "https://www.alphaxiv.org/abs/2409.12850",
+        "https://www.alphaxiv.org/abs/2605.08363",
+        "https://www.alphaxiv.org/abs/2606.04990"
+      ],
+      "acceptance": "Complete prior-art review and independent scientific review before claims of invention, theorem or academic validation.",
+      "rollback": "Use 'engineering study' status and preserve source authorship."
+    },
+    {
+      "id": "G14-08",
+      "token_type": "CHILD_PRIVACY_CULTURAL_REVIEW_NOT_RUN",
+      "status": "NOT_RUN",
+      "priority": "P1",
+      "evidence": [],
+      "acceptance": "Human review of logging/consent/accessibility/child-protection and respect for local cultures before broad deployment.",
+      "rollback": "Retain private, minimal data collection and no external sharing."
+    }
+  ],
+  "unresolved_token_zero": false,
+  "delete_policy": "none",
+  "promotion": false,
+  "claim_allowed": false
+}
