@@ -1,0 +1,39 @@
+name: FASTBOOT Omega S15 falsifiability and receipt gate
+on:
+  pull_request:
+    paths:
+      - 'docs/research/**'
+      - 'tests/verify_s15.py'
+      - '.github/workflows/fastboot-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-bound-research-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact source (token not persisted)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Source identity is exact current SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'AUDIT_SOURCE_SHA=%s\n' "$EXPECTED_SHA"
+      - name: Falsifiability, token types, receipts, rollback and 16 adversarial mutants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tests/verify_s15.py \
+            docs/research/FASTBOOT_S14_EVIDENCE_GATES.json \
+            docs/research/FASTBOOT_S15_FALSIFIABILITY.json
+          printf '%s\n' 'PASS_SCOPED=ACADEMIC_GATE_SCHEMA_AND_NEGATIVE_CONTROLS'
+          printf '%s\n' 'NOT_RUN=INDEPENDENT_REBUILD,PHYSICAL_USB,PHYSICAL_ARM_ON_PHONE'
+          printf '%s\n' 'claim_allowed=false; promotion=false'

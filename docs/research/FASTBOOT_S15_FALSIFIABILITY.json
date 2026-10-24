@@ -1,0 +1,127 @@
+{
+  "schema": "fastboot-omega/s15-falsifiability/v1",
+  "source_scope": "RESEARCH_ONLY",
+  "parent_merge_sha": "e38183978b61e7e6414c7a13fcf9162d740de2af",
+  "claim_allowed": false,
+  "promotion": false,
+  "unresolved_token_zero": false,
+  "provider_enforcement": "OBSERVED_GAP",
+  "device_execution": "NOT_RUN",
+  "usb_execution": "NOT_RUN",
+  "hypotheses": [
+    {
+      "gate": "G14-01",
+      "hypothesis": "Uma regra obrigatória impede merges sem revisão.",
+      "falsifier": "Merge sem aprovação continua possível após o ruleset ser habilitado.",
+      "experiment": "Criar PR inofensiva sem aprovação e observar rejeição do provedor.",
+      "acceptance": "Rejeição observável e regras habilitadas no GitHub.",
+      "rollback": "Manter main sem alterações e registrar falha de regra.",
+      "status": "OBSERVED_GAP",
+      "references": [
+        "https://github.com/rafaelmeloreisnovo/FASTBOOT/issues/3"
+      ]
+    },
+    {
+      "gate": "G14-02",
+      "hypothesis": "Builds independentes reproduzem bytes idênticos.",
+      "falsifier": "Dois builders isolados com insumos iguais divergem em SHA-256.",
+      "experiment": "Executar builds independentes, comparar árvore de fontes, versões e artefatos.",
+      "acceptance": "SHA-256 binários iguais e ambiente/proveniência completos.",
+      "rollback": "Não distribuir artefatos divergentes.",
+      "status": "NOT_RUN",
+      "references": [
+        "https://www.alphaxiv.org/abs/2505.21642"
+      ]
+    },
+    {
+      "gate": "G14-03",
+      "hypothesis": "Descritores e configuração USB são suficientes para autenticar aparelho.",
+      "falsifier": "Um periférico impostor apresenta os mesmos descritores e é aceito.",
+      "experiment": "Testar com hardware autorizado e periférico sintético, somente leitura.",
+      "acceptance": "Identidade e mudanças de conexão mitigadas mediante evidências físicas.",
+      "rollback": "Desconectar e manter simulador.",
+      "status": "UNVERIFIED",
+      "references": [
+        "https://www.alphaxiv.org/abs/2409.12850"
+      ]
+    },
+    {
+      "gate": "G14-04",
+      "hypothesis": "Um recibo de build identifica de modo criptográfico fonte e artefato.",
+      "falsifier": "Substituir um hash ou toolchain no recibo não é detectado pelo verificador.",
+      "experiment": "Alterar campos assinados em cópias e exigir verificação negativa.",
+      "acceptance": "Assinatura verificada em raiz independente e hashes conferidos.",
+      "rollback": "Marcar recibo como não atestado.",
+      "status": "NOT_RUN",
+      "references": [
+        "https://www.alphaxiv.org/abs/2605.08363"
+      ]
+    },
+    {
+      "gate": "G14-05",
+      "hypothesis": "Toda alegação de PASS pode ser rastreada a uma execução do mesmo SHA.",
+      "falsifier": "Um PASS órfão ou herdado de SHA diferente é aceito pelo gate.",
+      "experiment": "Injetar recibo inexistente e alterar o SHA na alegação; exigir rejeição.",
+      "acceptance": "Todos os testes negativos falham fechados no auditor.",
+      "rollback": "Rebaixar alegação a NOT_OBSERVED.",
+      "status": "UNVERIFIED",
+      "references": [
+        "https://www.alphaxiv.org/abs/2606.04990"
+      ]
+    },
+    {
+      "gate": "G14-06",
+      "hypothesis": "O merge preserva a evidência de compilação testada da PR.",
+      "falsifier": "O SHA de merge difere e recebe PASS herdado sem executar ou reconstruir.",
+      "experiment": "Comparar HEAD de PR, SHA de merge e logs vinculados a cada SHA.",
+      "acceptance": "Evidência no SHA exato de merge ou verificação de equivalência.",
+      "rollback": "Rejeitar declaração de versão liberada.",
+      "status": "NOT_OBSERVED",
+      "references": [
+        "https://github.com/rafaelmeloreisnovo/FASTBOOT/pull/5"
+      ]
+    },
+    {
+      "gate": "G14-07",
+      "hypothesis": "Há novidade científica independente dos trabalhos existentes.",
+      "falsifier": "Anterioridade cobre a contribuição ou experimento não reproduz o resultado.",
+      "experiment": "Escrever problema e comparação controlada com trabalhos relacionados.",
+      "acceptance": "Revisão independente de anterioridade e replicação acadêmica.",
+      "rollback": "Classificar como estudo de engenharia sem novidade validada.",
+      "status": "UNVERIFIED",
+      "references": [
+        "https://www.alphaxiv.org/abs/2505.21642",
+        "https://www.alphaxiv.org/abs/2606.04990"
+      ]
+    },
+    {
+      "gate": "G14-08",
+      "hypothesis": "Uso público minimiza dados e protege autonomia cultural e crianças.",
+      "falsifier": "Auditoria encontra identificador exposto sem consentimento ou linguagem inadequada.",
+      "experiment": "Revisão humana com logs sintéticos, ameaças e comunidades participantes.",
+      "acceptance": "Aprovação humana documentada, acessibilidade e privacidade verificadas.",
+      "rollback": "Impedir telemetria e disponibilização pública.",
+      "status": "NOT_RUN",
+      "references": []
+    }
+  ],
+  "receipts": [
+    {
+      "id": "R-S13-HOST",
+      "source_sha": "d3abeaeb930bc827d70fcdbab04d62a2f921a036",
+      "result": "PASS_SCOPED",
+      "environment": "GitHub Actions Ubuntu x86 + native AArch64 + ARMv7 QEMU",
+      "scope": "S13_SOURCE_HEAD_SOFTWARE_ONLY",
+      "url": "https://github.com/rafaelmeloreisnovo/FASTBOOT/actions/runs/40129145151"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C-S13-HISTORICAL",
+      "receipt": "R-S13-HOST",
+      "source_sha": "d3abeaeb930bc827d70fcdbab04d62a2f921a036",
+      "scope": "S13_SOURCE_HEAD_SOFTWARE_ONLY",
+      "status": "PASS_SCOPED"
+    }
+  ]
+}
