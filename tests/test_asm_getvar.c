@@ -28,6 +28,6 @@ int main(void) {
     if(fb_asm_make_getvar(key,0,plain)!=0 || plain[0]!=0xa5) return 3;
     if(fb_asm_make_getvar(key,1,0)!=0) return 4;
     if(fb_asm_make_getvar(key,~(size_t)0,plain)!=0 || plain[0]!=0xa5) return 5;
-    printf("PASS asm x86_64 equivalence: %lu byte-for-byte vectors + 4 invalid pointer/bound tests\n",assertions);
+    printf("PASS ISA-direct ASM equivalence (runtime ISA checked by host gate): %lu byte-for-byte vectors + 4 invalid pointer/bound tests\n",assertions);
     return 0;
 }
