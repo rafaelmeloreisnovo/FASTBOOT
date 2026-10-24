@@ -113,3 +113,28 @@ jobs:
           sha256sum build/test_usb_desc_s10_arm64_native
           echo 'PASS_SCOPED=NATIVE_ARM64_USERLAND; NOT_RUN=ANDROID_PHONE,USB_OTG,BAREMETAL_SOC'
           echo 'claim_allowed=false; promotion=false'
+
+  armv7-qemu-emulated-l0:
+    # Explicitly emulated ARMv7; never classify as native ARM or physical device.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source SHA (no retained credentials)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Install cross-compiler and QEMU TEST-ONLY tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends gcc-arm-linux-gnueabihf qemu-user
+      - name: Execute ARMv7 ASM differential tests under QEMU
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          EXPECTED_HEAD="$EXACT_HEAD" sh tests/run_armv7_qemu.sh
