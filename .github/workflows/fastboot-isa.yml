@@ -31,13 +31,35 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
           printf 'HEAD=%s\n' "$EXACT_HEAD"
-      - name: No downloaded toolchains; prerequisites must already exist
+      - name: Select isolated build-only LLVM utilities (never link into L0)
         shell: bash
         run: |
           set -euo pipefail
-          for t in cc clang llvm-objcopy llvm-objdump nm readelf sha256sum; do
-            command -v "$t"
-          done
+          for t in cc clang nm readelf sha256sum; do command -v "$t"; done
+          bindir="$RUNNER_TEMP/fastboot-llvm"
+          mkdir -p "$bindir"
+          select_llvm() {
+            local tool="$1" found="" v
+            found="$(command -v "$tool" || true)"
+            if [ -z "$found" ]; then
+              for v in 21 20 19 18 17 16 15 14; do
+                found="$(command -v "$tool-$v" || true)"
+                if [ -n "$found" ]; then break; fi
+              done
+            fi
+            if [ -n "$found" ]; then ln -sfn "$found" "$bindir/$tool"; fi
+            test -x "$bindir/$tool"
+          }
+          if ! select_llvm llvm-objcopy || ! select_llvm llvm-objdump; then
+            echo 'LLVM binutils unavailable on runner; install BUILD-ONLY utilities (no binary runtime dependency)'
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends llvm-18
+            select_llvm llvm-objcopy
+            select_llvm llvm-objdump
+          fi
+          echo "$bindir" >> "$GITHUB_PATH"
+          "$bindir/llvm-objcopy" --version | head -1
+          "$bindir/llvm-objdump" --version | head -1
       - name: C11 freestanding no-extern gate and transport compile-only
         shell: bash
         run: sh tests/run.sh
