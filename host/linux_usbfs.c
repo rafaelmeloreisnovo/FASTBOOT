@@ -18,6 +18,24 @@ static int uint_arg(const char *str, unsigned long max, unsigned long *v) {
   if(errno || !end || *end || n>max) return 0;
   *v=n; return 1;
 }
+/* The only supported host path shape is the Linux usbfs device node.
+ * This reduces accidental ioctl delivery to unrelated device files; it
+ * cannot prove that the path names a trustworthy Fastboot device.
+ */
+static int usb_path_shape_valid(const char *path) {
+  static const char prefix[]="/dev/bus/usb/";
+  size_t i;
+  if(!path) return 0;
+  for(i=0u;i<sizeof(prefix)-1u;++i) if(path[i]!=prefix[i]) return 0;
+  for(i=sizeof(prefix)-1u;i<sizeof(prefix)-1u+3u;++i) {
+    if(path[i]<'0'||path[i]>'9') return 0;
+  }
+  if(path[i++]!='/') return 0;
+  if(path[i]<'0'||path[i]>'9') return 0;
+  if(path[i+1u]<'0'||path[i+1u]>'9') return 0;
+  if(path[i+2u]<'0'||path[i+2u]>'9') return 0;
+  return path[i+3u]=='\0';
+}
 static void print_bytes(const uint8_t *s,size_t n) {
   size_t i;
   for(i=0;i<n;++i){ unsigned char c=s[i];
@@ -92,20 +110,30 @@ static int usb_get_interface_alt_zero(int fd, unsigned int iface) {
   n=ioctl(fd,USBDEVFS_CONTROL,&c);
   return n==1 && alt==0u;
 }
+/* Clear potentially identifying responses and requested getvar key at exit.
+ * Volatile writes are required so optimizers do not remove this scrub.
+ * Does not claim full platform memory or swap sanitization.
+ */
+static void wipe_private(void *buffer, size_t n) {
+  volatile uint8_t *p=(volatile uint8_t *)buffer;
+  while(n>0u){--n;p[n]=0u;}
+}
 int main(int argc, char **argv) {
   unsigned long iface,epout,epin;int fd=-1, claimed=0,rc=1;
-  uint8_t tx[FB_COMMAND_MAX],rx[FB_REPLY_MAX]; size_t txlen;
+  int show_value=(argc==8 && strcmp(argv[7],"--show-value")==0);
+  uint8_t tx[FB_COMMAND_MAX]={0},rx[FB_REPLY_MAX]={0}; size_t txlen;
   fb_guard g;struct usbdevfs_bulktransfer x;struct timespec a,b;
-  if(argc!=7 || !uint_arg(argv[2],255u,&iface) ||
+  if((argc!=7 && argc!=8) || (argc==8 && !show_value) ||
+      !uint_arg(argv[2],255u,&iface) ||
       !uint_arg(argv[3],255u,&epout) || !uint_arg(argv[4],255u,&epin) ||
       epout<1u || epout>15u || epin<0x81u || epin>0x8fu ||
-      strcmp(argv[5],"getvar")) {
-    fprintf(stderr,"usage: %s /dev/bus/usb/BBB/DDD INTERFACE EP_OUT EP_IN getvar KEY\n",argv[0]);return 2;
+      strcmp(argv[5],"getvar") || !usb_path_shape_valid(argv[1])) {
+    fprintf(stderr,"usage: %s /dev/bus/usb/BBB/DDD INTERFACE EP_OUT EP_IN getvar KEY [--show-value]\n",argv[0]);rc=2;goto done;
   }
   txlen=fb_make_getvar((const uint8_t *)argv[6],strlen(argv[6]),tx);
-  if(txlen==0u){fputs("getvar key rejected\n",stderr);return 2;}
-  fd=open(argv[1],O_RDWR|O_CLOEXEC);
-  if(fd<0){perror("open USB device");return 1;}
+  if(txlen==0u){fputs("getvar key rejected\n",stderr);rc=2;goto done;}
+  fd=open(argv[1],O_RDWR|O_CLOEXEC|O_NOFOLLOW);
+  if(fd<0){perror("open USB device");goto done;}
   if(!usb_verify_fastboot_iface(fd,(unsigned)iface,(unsigned)epout,(unsigned)epin)) {
     fputs("FAIL CLOSED: USB active config is not exactly a matching FF/42/03 two-BULK Fastboot interface\n",stderr);goto done;
   }
@@ -141,15 +169,26 @@ int main(int argc, char **argv) {
     if(clock_gettime(CLOCK_MONOTONIC,&b)<0){fb_guard_step(&g,FB_EV_IO_FAIL,0,0,0);break;}
     if(got<0){perror("bulk IN");fb_guard_step(&g,FB_EV_IO_FAIL,0,0,elapsed_ms(&a,&b));break;}
     fb_guard_step(&g,FB_EV_REPLY,rx,(size_t)got,elapsed_ms(&a,&b));
-    if(g.reason!=FB_G_PROTOCOL && g.reason!=FB_G_TIMEOUT){
-      printf("response ");print_bytes(rx,(size_t)got);putchar('\n');
+    /* The response payload can contain serial, account/device identifiers,
+     * carrier data or arbitrary OEM values. Never emit it by default.
+     * DATA is explicitly blocked and must not be printed as accepted output.
+     * An explicit --show-value is the only path to raw payload display.
+     */
+    if(g.reason!=FB_G_PROTOCOL && g.reason!=FB_G_TIMEOUT &&
+       g.reason!=FB_G_DATA_BLOCKED && got>=4){
+      if(show_value){
+        printf("response ");print_bytes(rx,(size_t)got);putchar('\n');
+      } else {
+        printf("response %.4s [payload redacted]\n",(const char *)rx);
+      }
     }
   }
-  if(g.stage==FB_G_COMPLETE){rc=0;puts("GETVAR_DONE (read-only; physical response)");}
+  if(g.stage==FB_G_COMPLETE){rc=0;puts("GETVAR_DONE (read-only transport response; physical transport not attested)");}
   else fprintf(stderr,"GETVAR_NOT_SUCCESS reason=%u stage=%u\n",(unsigned)g.reason,(unsigned)g.stage);
  done:
   if(claimed){int num=(int)iface;ioctl(fd,USBDEVFS_RELEASEINTERFACE,&num);}
-  close(fd);
+  if(fd>=0) close(fd);
+  wipe_private(tx,sizeof(tx));wipe_private(rx,sizeof(rx));
   if(claimed) fb_guard_step(&g,FB_EV_CLOSE,0,0,0);
   return rc;
 }
