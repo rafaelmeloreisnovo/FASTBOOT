@@ -38,3 +38,7 @@ sh tests/run_classify_asm.sh
 
 # S6 chain: direct state machine follows prior getvar/classifier gates.
 sh tests/run_session_asm.sh
+
+# S8 strict independent ELF/ISA gate; previous S4-S6 gates remain intact.
+sh tests/test_l0_negative.sh
+sh tests/build_l0_isolated.sh
