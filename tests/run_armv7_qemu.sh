@@ -13,7 +13,7 @@ done
 mkdir -p build/armv7-qemu
 for name in getvar classify session; do
   bin="build/armv7-qemu/test_$name"
-  arm-linux-gnueabihf-gcc -std=c11 -O2 -marm -march=armv7-a \
+  arm-linux-gnueabihf-gcc -std=c11 -O2 -marm -march=armv7-a -mfpu=vfpv3-d16 \
     -Wall -Wextra -Werror -Iinclude \
     src/fb_omega.c "tests/test_asm_$name.c" "asm/armv7/fb_$name.S" \
     -Wl,-z,noexecstack -o "$bin"
