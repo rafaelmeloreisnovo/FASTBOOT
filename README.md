@@ -16,6 +16,6 @@ nm -u build/fb_l0.o
 The L0 object must have **no undefined external symbols**. The Linux host executable is **not** freestanding: USB permissions and OS syscalls belong to its explicit adapter. See [architecture](docs/ARCHITECTURE.md). Do not operate on connected devices before checking exact USB interface and endpoint descriptors.
 
 ### Governed status
-SOURCE_IMPLEMENTED_L0 | LOCAL_SYNTHETIC_PASS_56 | ANDROID_HOST_NOT_IMPLEMENTED | PHYSICAL_NOT_RUN | claim_allowed=false | NO_MERGE.
+SOURCE_IMPLEMENTED_L0 | LOCAL_SYNTHETIC_PASS_56 | ANDROID_HOST_SOURCE_ONLY | PHYSICAL_NOT_RUN | claim_allowed=false | NO_MERGE.
 
 This work preserves the initial main state as predecessor, adds no flash/unlock/erase/reboot paths, and does not claim origin of the publicly documented Fastboot protocol.
