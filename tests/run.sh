@@ -7,7 +7,7 @@ WARN="-Wall -Wextra -Werror -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-
 ./build/test_fb
 "$CC" -std=c11 -O2 $WARN -Iinclude src/fb_omega.c src/fb_guard.c tests/test_guard.c -o build/test_guard
 ./build/test_guard
-"$CC" -std=gnu11 -O2 $WARN -Iinclude src/fb_omega.c src/fb_guard.c host/linux_usbfs.c -o build/fb-linux
+"$CC" -std=gnu11 -O2 $WARN -Iinclude src/fb_omega.c src/fb_guard.c src/fb_usb_desc.c host/linux_usbfs.c -o build/fb-linux
 "$CC" -std=c11 -O2 $WARN -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Iinclude -c src/fb_omega.c -o build/fb_omega.o
 "$CC" -std=c11 -O2 $WARN -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Iinclude -c src/fb_guard.c -o build/fb_guard.o
 "$CC" -nostdlib -r build/fb_omega.o build/fb_guard.o -o build/fb_l0_combined.o
@@ -17,3 +17,6 @@ if "$CC" -std=c11 -Iinclude -DFB_OMEGA_ENABLE_WRITE=1 -c src/fb_guard.c -o build
   exit 1
 fi
 echo "PASS: L0 no undefined symbols; forbidden write profile rejected; Linux host builds"
+
+# S9 bounded pure-C USB descriptor scanner tests, no device connected.
+sh tests/run_usb_desc.sh

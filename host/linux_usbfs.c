@@ -1,5 +1,6 @@
 /* L1 notebook adapter: kernel usbfs and POSIX calls are OUTSIDE freestanding L0. */
 #include "fb_guard.h"
+#include "fb_usb_desc.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/usbdevice_fs.h>
@@ -35,6 +36,43 @@ static uint32_t elapsed_ms(const struct timespec *a, const struct timespec *b) {
   ms+=(uint64_t)ns/1000000u;
   return ms>=UINT32_MAX ? UINT32_MAX : (uint32_t)ms;
 }
+/* L1 only: Linux usbfs control read. This code is NOT freestanding and
+ * never changes configuration, detaches kernel drivers or writes firmware.
+ * Verify ACTIVE configuration by value, not just config index zero.
+ */
+static int usb_control_read(int fd, unsigned int request, unsigned int value,
+                             void *buf, unsigned int len) {
+  struct usbdevfs_ctrltransfer c;
+  int result;
+  memset(&c,0,sizeof(c));
+  c.bRequestType=0x80u;c.bRequest=(unsigned char)request;
+  c.wValue=(unsigned short)value;c.wIndex=0u;
+  c.wLength=(unsigned short)len;c.timeout=2500u;c.data=buf;
+  result=ioctl(fd,USBDEVFS_CONTROL,&c);
+  return result==(int)len;
+}
+static int usb_verify_fastboot_iface(int fd, unsigned int iface,
+                                      unsigned int epout, unsigned int epin) {
+  unsigned char active=0, device[18], head[9], conf[1024];
+  unsigned int idx, count;
+  fb_usb_binding binding;
+  if(!usb_control_read(fd,8u,0u,&active,1u) || active==0u) return 0;
+  if(!usb_control_read(fd,6u,0x0100u,device,18u) ||
+     device[0]!=18u || device[1]!=1u) return 0;
+  count=device[17];
+  if(count<1u || count>4u) return 0;
+  for(idx=0u;idx<count;++idx) {
+    unsigned int total;
+    if(!usb_control_read(fd,6u,0x0200u|idx,head,9u) ||
+       head[0]!=9u || head[1]!=2u) return 0;
+    total=(unsigned int)head[2]+((unsigned int)head[3]<<8u);
+    if(total<9u || total>sizeof(conf)) return 0;
+    if(!usb_control_read(fd,6u,0x0200u|idx,conf,total)) return 0;
+    if(conf[5]!=active) continue;
+    return fb_usb_match_config(conf,total,iface,epout,epin,&binding)==1u;
+  }
+  return 0;
+}
 int main(int argc, char **argv) {
   unsigned long iface,epout,epin;int fd=-1, claimed=0,rc=1;
   uint8_t tx[FB_COMMAND_MAX],rx[FB_REPLY_MAX]; size_t txlen;
@@ -49,6 +87,9 @@ int main(int argc, char **argv) {
   if(txlen==0u){fputs("getvar key rejected\n",stderr);return 2;}
   fd=open(argv[1],O_RDWR|O_CLOEXEC);
   if(fd<0){perror("open USB device");return 1;}
+  if(!usb_verify_fastboot_iface(fd,(unsigned)iface,(unsigned)epout,(unsigned)epin)) {
+    fputs("FAIL CLOSED: USB active config is not exactly a matching FF/42/03 two-BULK Fastboot interface\n",stderr);goto done;
+  }
   {int num=(int)iface;if(ioctl(fd,USBDEVFS_CLAIMINTERFACE,&num)<0){perror("claim interface");goto done;}claimed=1;}
   fb_guard_init(&g,FB_GUARD_BUDGET_MS);
   fb_guard_step(&g,FB_EV_BIND,0,0,0u);
