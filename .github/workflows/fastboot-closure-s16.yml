@@ -1,0 +1,119 @@
+name: FASTBOOT Omega S16 double-build and NO-GO authority
+on:
+  pull_request:
+    paths:
+      - 'asm/**'
+      - 'tests/**'
+      - 'docs/research/**'
+      - '.github/workflows/fastboot-closure-s16.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  independent-workers:
+    name: Bytewise build ${{ matrix.slot }}
+    strategy:
+      fail-fast: false
+      matrix:
+        slot: [a, b]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact unprivileged source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Ensure only build tools are available
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v clang
+          if ! command -v llvm-objcopy >/dev/null && ! command -v llvm-objcopy-18 >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends llvm-18
+          fi
+      - name: Build nine freestanding objects and hash fifteen artifacts
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          S16_SLOT: ${{ matrix.slot }}
+        run: |
+          set -euo pipefail
+          sh tests/s16_rebuild.sh
+      - name: Upload build-only manifest, not sensitive device data
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s16-manifest-${{ matrix.slot }}
+          path: build/s16-evidence/
+          if-no-files-found: error
+          retention-days: 14
+  compare-manifests:
+    name: Compare two independent worker manifests
+    needs: independent-workers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Download build manifests from two fresh runner instances
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: s16-manifest-*
+          path: manifests
+          merge-multiple: false
+      - name: Compare fifteen bytewise artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          a=manifests/s16-manifest-a/manifest-a.sha256
+          b=manifests/s16-manifest-b/manifest-b.sha256
+          test -s "$a" && test -s "$b"
+          test "$(wc -l < "$a" | tr -d ' ')" -eq 15
+          test "$(wc -l < "$b" | tr -d ' ')" -eq 15
+          diff -u "$a" "$b"
+          echo 'PASS_SCOPED=15_FREESTANDING_TEXT_AND_LAYOUT_ARTIFACT_HASHES_MATCH_ON_TWO_GITHUB_WORKERS'
+          echo 'NOT_PROVEN=INDEPENDENT_OPERATOR_TRUST_ROOT,TOOLCHAIN_SECURITY,PHYSICAL_HARDWARE'
+  release-no-go:
+    name: Enforced test-only NO-GO / provider authority check
+    needs: compare-manifests
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact source without retained credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Verify twenty-two dangerous semantic mutations are denied
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tests/selftest_s16_authority.py
+      - name: Observe provider permission, review and physical receipt and refuse unsafe release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUM: ${{ github.event.pull_request.number || 0 }}
+          REBUILD_RESULT: ${{ needs.compare-manifests.result }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          if [ "$PR_NUM" -eq 0 ]; then echo 'NO_GO: not PR-scoped execution'; exit 3; fi
+          rebuild_flag=''
+          if [ "$REBUILD_RESULT" = success ]; then rebuild_flag='--rebuild-pass'; fi
+          # Intentional rc=3 while provider protection, physical evidence or review are missing.
+          python3 -B tests/verify_s16_authority.py --repo "$GITHUB_REPOSITORY" \
+            --head "$EXPECTED_HEAD" --pr "$PR_NUM" $rebuild_flag --enforce \
+            --output build/s16-provider-receipt.json
+      - name: Preserve typed NO-GO receipt even when audit refuses release
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s16-provider-no-go-receipt
+          path: build/s16-provider-receipt.json
+          if-no-files-found: warn
+          retention-days: 14
