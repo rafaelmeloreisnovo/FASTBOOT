@@ -48,12 +48,11 @@ The assistant must remain offline-first and read-only:
 - TOKEN_VAZIO_USB_PERMISSION_RUNTIME
 - TOKEN_VAZIO_KERNEL_USB_HOST_DRIVER_PATH
 - TOKEN_VAZIO_CABLE_POWER_AND_ROLE
-- TOKEN_VAZIO_REDMİ12_FASTBOOT_DESCRIPTOR
+- TOKEN_VAZIO_REDMI12_FASTBOOT_DESCRIPTOR
 - TOKEN_VAZIO_PHYSICAL_GETVAR_PRODUCT
 - TOKEN_VAZIO_APK_INSTALL_AND_LAUNCH
 
-Canonical ASCII target token remains REDMI12. The non-ASCII token above is not
-an identifier and must not enter schemas or comparisons.
+Canonical target identity is ASCII: REDMI12 / 23053RN02A / fire.
 
 ## Rollback
 
