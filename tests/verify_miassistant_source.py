@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Static contract for the read-only Android USB assistant source.
-
-This test does not claim an APK, DEX, JNI, OTG, or Redmi 12 hardware run.
-It fails if the source contract silently expands from getvar-only to a
-destructive Fastboot command family.
-"""
+"""Fail-closed source contract for the Android USB assistant."""
 from pathlib import Path
 import re
 import sys
@@ -29,6 +24,8 @@ for token in (
     'EXPECTED_PRODUCT = "fire"',
     'HOST_ABI_ARM32 = "armeabi-v7a"',
     'HOST_ABI_ARM64 = "arm64-v8a"',
+    'TOKEN_VAZIO_FASTBOOT_ANDROID_VERSION_DOES_NOT_PROVE_HYPEROS_BUILD',
+    'inspect(GetvarReader reader)',
     'reader.get("product")',
     'reader.get("serialno")',
     'reader.get("slot-count")',
@@ -36,13 +33,17 @@ for token in (
 ):
     require(assistant, token)
 
+if "inspect(AndroidFastbootUsbTransport" in assistant:
+    fail("pure classifier is incorrectly coupled to USB transport")
+if "contains(\"hyperos\")" in assistant.lower():
+    fail("android-version was promoted to HyperOS evidence")
+
 require(transport, "writeGetvar")
 require(transport, "only getvar allowed")
 require(transport, "USB_ENDPOINT_XFER_BULK")
 
-# Match wire-command literals only, avoiding explanatory prose/comments.
 for forbidden in ("flash:", "erase:", "oem unlock", "flashing ", "boot:", "reboot"):
     if re.search(r'["\']' + re.escape(forbidden), assistant + transport, re.I):
         fail("destructive wire-command literal present: " + forbidden)
 
-print("PASS_SCOPED: Android host source is getvar-only; no APK/JNI/OTG claim")
+print("PASS_SCOPED: source contract is read-only and HyperOS uncertainty is typed")
