@@ -1,0 +1,25 @@
+name: Mi Assistant Android source contract
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Verify fail-closed source contract
+        run: python3 -B tests/verify_miassistant_source.py
+      - name: Compile Java 8 classifier without Android runtime
+        run: |
+          set -eu
+          mkdir -p build/miassistant-java
+          javac --release 8 -Xlint:all -Werror -d build/miassistant-java \
+            host/android/MiAssistantArm32.java \
+            tests/android/MiAssistantArm32Test.java
+      - name: Execute classifier regressions
+        run: java -cp build/miassistant-java org.rafaelia.fastboot.MiAssistantArm32Test
