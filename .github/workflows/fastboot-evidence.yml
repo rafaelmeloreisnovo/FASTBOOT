@@ -1,10 +1,6 @@
 name: FASTBOOT Omega S15 falsifiability and receipt gate
 on:
-  pull_request:
-    paths:
-      - 'docs/research/**'
-      - 'tests/verify_s15.py'
-      - '.github/workflows/fastboot-evidence.yml'
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +10,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - name: Checkout exact source (token not persisted)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false

@@ -1,13 +1,6 @@
 name: FASTBOOT Omega ISA and freestanding source gates
 on:
-  pull_request:
-    paths:
-      - 'asm/**'
-      - 'src/**'
-      - 'include/**'
-      - 'host/**'
-      - 'tests/**'
-      - '.github/workflows/fastboot-isa.yml'
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,7 +11,7 @@ jobs:
     steps:
       # GitHub-hosted checkout is build infrastructure only, not an ELF dependency.
       - name: Checkout exact source HEAD, no persisted token
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -88,7 +81,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout pinned source without retained credentials
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -120,7 +113,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout exact source SHA (no retained credentials)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false

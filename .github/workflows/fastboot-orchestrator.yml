@@ -1,0 +1,82 @@
+name: FASTBOOT Omega unique workflow orchestrator
+on:
+  pull_request:
+    paths:
+      - 'asm/**'
+      - 'src/**'
+      - 'include/**'
+      - 'host/**'
+      - 'tests/**'
+      - 'docs/**'
+      - 'governance/**'
+      - 'receipts/**'
+      - 'AGENT.md'
+      - 'AGENTS.md'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: fastboot-omega-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  composition-contract:
+    name: AGENTS and workflow composition contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source with Node 24 action
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Verify unique entrypoint, pins and documentation contract
+        run: python3 -B tests/verify_workflow_composition.py
+  evidence:
+    needs: composition-contract
+    uses: ./.github/workflows/fastboot-evidence.yml
+    permissions:
+      contents: read
+  isa:
+    needs: composition-contract
+    uses: ./.github/workflows/fastboot-isa.yml
+    permissions:
+      contents: read
+  miassistant:
+    needs: composition-contract
+    uses: ./.github/workflows/miassistant-android-source.yml
+    permissions:
+      contents: read
+  closure:
+    needs: [evidence, isa, miassistant]
+    if: always() && needs.evidence.result == 'success' && needs.isa.result == 'success' && needs.miassistant.result == 'success'
+    uses: ./.github/workflows/fastboot-closure-s16.yml
+    permissions:
+      contents: read
+      pull-requests: read
+  receipt:
+    name: Succinct composition receipt
+    needs: [composition-contract, evidence, isa, miassistant, closure]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Write bounded outcome to job summary
+        shell: bash
+        run: |
+          {
+            echo '## FASTBOOT Omega composition'
+            echo
+            echo '| gate | result |'
+            echo '|---|---|'
+            echo '| contract | ${{ needs.composition-contract.result }} |'
+            echo '| evidence | ${{ needs.evidence.result }} |'
+            echo '| isa | ${{ needs.isa.result }} |'
+            echo '| miassistant | ${{ needs.miassistant.result }} |'
+            echo '| closure | ${{ needs.closure.result }} |'
+            echo
+            echo 'S16 failure may be an intentional authority/physical-evidence NO-GO; inspect its typed receipt.'
+          } >> "$GITHUB_STEP_SUMMARY"
