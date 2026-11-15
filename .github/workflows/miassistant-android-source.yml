@@ -3,12 +3,14 @@ on:
   pull_request:
     paths:
       - 'host/android/**'
+      - 'tests/android/**'
       - 'tests/verify_miassistant_source.py'
       - '.github/workflows/miassistant-android-source.yml'
   push:
     branches: [main]
     paths:
       - 'host/android/**'
+      - 'tests/android/**'
       - 'tests/verify_miassistant_source.py'
       - '.github/workflows/miassistant-android-source.yml'
   workflow_dispatch:
@@ -22,5 +24,12 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Verify read-only Android host contract
+      - name: Verify fail-closed source contract
         run: python3 -B tests/verify_miassistant_source.py
+      - name: Compile Java 8 classifier without Android runtime
+        run: |
+          set -eu
+          mkdir -p build/miassistant-java
+          javac -source 8 -target 8 -Xlint:all -Werror             -d build/miassistant-java             host/android/MiAssistantArm32.java             tests/android/MiAssistantArm32Test.java
+      - name: Execute classifier regressions
+        run: java -cp build/miassistant-java org.rafaelia.fastboot.MiAssistantArm32Test
