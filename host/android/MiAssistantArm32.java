@@ -1,9 +1,11 @@
 package org.rafaelia.fastboot;
 
-/** Read-only Redmi 12 Fastboot assistant facade for Android ARM32 hosts. */
+/** Read-only Redmi 12 Fastboot facade on Android ARM32 or ARM64 host. */
 public final class MiAssistantArm32 {
     public static final String TARGET_FAMILY = "redmi-12";
     public static final String EXPECTED_PRODUCT = "fire";
+    public static final String HOST_ABI_ARM32 = "armeabi-v7a";
+    public static final String HOST_ABI_ARM64 = "arm64-v8a";
     private MiAssistantArm32() {}
 
     public static final class Report {
@@ -24,11 +26,9 @@ public final class MiAssistantArm32 {
         String slots=clean(reader.get("slot-count"));
         String os=clean(reader.get("android-version"));
         return new Report(product, serial, slots, EXPECTED_PRODUCT.equals(product),
-            os.contains("hyperos") || os.contains("HyperOS"));
+            os.toLowerCase(java.util.Locale.ROOT).contains("hyperos"));
     }
 
     private static String clean(String value) { return value == null ? "" : value.trim(); }
-
-    /** Reply parsing remains owned by shared C11 L0/JNI. */
     public interface GetvarReader { String get(String key); }
 }
