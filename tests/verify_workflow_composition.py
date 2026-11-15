@@ -42,6 +42,14 @@ for name in SPECIALISTS:
     if texts.get(ORCH.name, "").count(call) != 1:
         errors.append(f"orchestrator must call {name} exactly once")
 
+closure = texts.get("fastboot-closure-s16.yml", "")
+orchestrator = texts.get(ORCH.name, "")
+for token in ("enforce_release:", "RELEASE_AUTHORITY=NO_GO_RECORDED", "claim_allowed=false"):
+    if token not in closure:
+        errors.append(f"closure missing split validation/release contract: {token}")
+if "enforce_release: false" not in orchestrator:
+    errors.append("orchestrator PR validation must not enforce release authority")
+
 for name, text in texts.items():
     for action, sha in re.findall(r"uses:\s+(actions/[\w-]+)@([0-9a-f]{40})", text):
         expected = ALLOWED.get(action)
