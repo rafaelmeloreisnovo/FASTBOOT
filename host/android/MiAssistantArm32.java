@@ -3,7 +3,10 @@ package org.rafaelia.fastboot;
 /** Read-only Redmi 12 Fastboot facade on Android ARM32 or ARM64 host. */
 public final class MiAssistantArm32 {
     public static final String TARGET_FAMILY = "redmi-12";
+    public static final String TARGET_MODEL = "23053RN02A";
     public static final String EXPECTED_PRODUCT = "fire";
+    public static final String TARGET_ANDROID = "15";
+    public static final String TARGET_HYPEROS_BUILD = "2.0.209.0.VMXMIXM";
     public static final String HOST_ABI_ARM32 = "armeabi-v7a";
     public static final String HOST_ABI_ARM64 = "arm64-v8a";
     private MiAssistantArm32() {}
