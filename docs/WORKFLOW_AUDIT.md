@@ -22,3 +22,7 @@ Baseline: `8b06254ebf22b902adbc618013a684d56132e7d4`
 ## Rollback
 
 Revert the successor commit as a reviewed change. Do not delete earlier runs or receipts. A rollback restores the former triggers and Node 20 pins, so it is a recovery option, not the desired steady state.
+
+## Validation versus release authority
+
+Normal PR orchestration calls S16 with `enforce_release: false`. Correct builds, tests and manifest comparison can therefore be green while a typed `NO_GO` blocks release claims. Manual/release execution with `enforce_release: true` fails closed when provider review or physical evidence is missing. Unexpected verifier errors always fail in both modes.

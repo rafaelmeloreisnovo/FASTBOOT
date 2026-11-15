@@ -55,6 +55,8 @@ jobs:
     needs: [evidence, isa, miassistant]
     if: always() && needs.evidence.result == 'success' && needs.isa.result == 'success' && needs.miassistant.result == 'success'
     uses: ./.github/workflows/fastboot-closure-s16.yml
+    with:
+      enforce_release: false
     permissions:
       contents: read
       pull-requests: read
@@ -78,5 +80,5 @@ jobs:
             echo '| miassistant | ${{ needs.miassistant.result }} |'
             echo '| closure | ${{ needs.closure.result }} |'
             echo
-            echo 'S16 failure may be an intentional authority/physical-evidence NO-GO; inspect its typed receipt.'
+            echo 'A green closure means technical validation passed; release authority may still be NO_GO in its typed receipt.'
           } >> "$GITHUB_STEP_SUMMARY"
