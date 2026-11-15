@@ -30,6 +30,8 @@ jobs:
         run: |
           set -eu
           mkdir -p build/miassistant-java
-          javac -source 8 -target 8 -Xlint:all -Werror             -d build/miassistant-java             host/android/MiAssistantArm32.java             tests/android/MiAssistantArm32Test.java
+          javac --release 8 -Xlint:all -Werror -d build/miassistant-java \
+            host/android/MiAssistantArm32.java \
+            tests/android/MiAssistantArm32Test.java
       - name: Execute classifier regressions
         run: java -cp build/miassistant-java org.rafaelia.fastboot.MiAssistantArm32Test
