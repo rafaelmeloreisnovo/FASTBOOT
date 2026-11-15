@@ -41,12 +41,11 @@ contract.
 - TOKEN_VAZIO_ANDROID_SDK_NDK_BUILD
 - TOKEN_VAZIO_APK_DEX_ELF_JNI
 - TOKEN_VAZIO_MOTO_E7_USB_HOST_PERMISSION
-- TOKEN_VAZIO_REDMİ12_USB_DESCRIPTORS
+- TOKEN_VAZIO_REDMI12_USB_DESCRIPTORS
 - TOKEN_VAZIO_PHYSICAL_GETVAR
 - TOKEN_VAZIO_INDEPENDENT_REVIEW
 
-Note: the visually similar dotted capital I in REDMİ12 above is not an identity
-key. Canonical target identity is ASCII: REDMI12 / 23053RN02A / fire.
+Canonical target identity is ASCII: REDMI12 / 23053RN02A / fire.
 
 claim_allowed=false  
 merge_allowed=false
