@@ -1,30 +1,31 @@
-# Mi Assistant ARM32 USB — Redmi 12
+# Mi Assistant USB — host ARM32/ARM64, alvo Redmi 12
 
 Status: SOURCE_IMPLEMENTED | PHYSICAL_NOT_RUN | claim_allowed=false
 
-This branch adds a read-only Android facade for a Redmi 12 Fastboot host running on an ARM32 Android device (armeabi-v7a at APK/native build time).
+O Redmi 12 é o dispositivo-alvo. O Mi Assistant é executado em outro dispositivo Android com USB Host/OTG, em ARM32 (armeabi-v7a) ou ARM64 (arm64-v8a).
 
-## Scope
+## Escopo
 
-- Reuses AndroidFastbootUsbTransport.
-- Reads only product, serialno, slot-count and android-version.
-- Matches Redmi 12 by product codename fire.
-- Reports whether android-version contains HyperOS.
-- Does not unlock, erase, flash, boot, reboot, patch or invoke Xiaomi proprietary Mi Assistant protocols.
+- Reutiliza AndroidFastbootUsbTransport.
+- Lê somente product, serialno, slot-count e android-version do Redmi 12 em Fastboot.
+- Confere provisoriamente o codename fire.
+- Observa se android-version contém HyperOS.
+- Não executa unlock, erase, flash, boot, reboot, patch ou protocolo proprietário Xiaomi.
 
-## ABI boundary
+## ABI
 
-Java bytecode is architecture-neutral. The ARM32 requirement applies to the eventual native/JNI/APK artifact: native ABI armeabi-v7a, shared C/ASM L0, and no JNI/APK PASS until compiled and tested with an Android toolchain.
+A camada Java é comum aos dois hosts. O artefato nativo/JNI deve ser produzido para armeabi-v7a e/ou arm64-v8a, conforme o host Android. O alvo Redmi 12 não define o ABI do Mi Assistant.
 
 ## Gates
 
-| Gate | Result |
+| Gate | Resultado |
 |---|---|
-| Source added | IMPLEMENTED |
-| Existing bounded transport reused | REVIEW_REQUIRED |
-| ARM32 APK/DEX/ELF build | TOKEN_VAZIO — toolchain absent in repository |
-| Redmi 12 physical USB | TOKEN_VAZIO — not run |
-| HyperOS identification | OBSERVATION_ONLY |
-| Mi Assistant OEM protocol | TOKEN_VAZIO_OEM_PROTOCOL |
+| Código-fonte | IMPLEMENTED |
+| Host ARM32 | SOURCE_ONLY |
+| Host ARM64 | SOURCE_ONLY |
+| APK/DEX/ELF/JNI | TOKEN_VAZIO — toolchain não presente |
+| Redmi 12 USB físico | TOKEN_VAZIO — não executado |
+| HyperOS | OBSERVATION_ONLY |
+| Protocolo Mi Assistant OEM | TOKEN_VAZIO_OEM_PROTOCOL |
 
-Do not claim global PASS without Android build output, descriptor capture, device receipt and readback evidence.
+Não declarar PASS global sem build, descritores USB, receipt do dispositivo e readback.
